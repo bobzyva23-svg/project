@@ -1,0 +1,607 @@
+from shapely.geometry import Point
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+import tkinter as tk
+from tkinter import filedialog
+
+root = tk.Tk()
+root.withdraw()
+file_path = filedialog.askopenfilename()
+print(file_path)
+df = pd.read_excel(file_path,  "Sheet1")
+print(df)
+print("==========================================================================")
+df=df.fillna(0)
+print(df)
+print("==========================================================================")
+
+# importing package
+import matplotlib.pyplot as plt
+# create data
+x = df['Sample']
+y1 = df['EMG9_V']
+y2=df['EMG10_V']
+# plot lines
+plt.plot(x, y1, label = "EMG9_V")
+plt.plot(x, y2, label = "EMG10_V")
+plt.xlabel('Value', fontsize=17)
+plt.ylabel('EMG Signal', fontsize=17)
+plt.legend()
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/EMG1_SINAL1.png')
+plt.show()
+
+y2 = df['FootSwitch1_V']
+y3 = df['FootSwitch2_V']
+# plot lines
+plt.plot(x, y2, label = "Foot_Switch1")
+plt.plot(x, y3, label = "Foot_switch2")
+plt.xlabel('Value', fontsize=17)
+plt.ylabel('Foot Switch Signal', fontsize=17)
+plt.legend()
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/FOOTSWITCH22.png')
+plt.show()
+df['TARGET']=(df['FootSwitch1_V'] +  df['FootSwitch2_V'])/2
+
+
+TARGET1=[]
+sum=0
+for f in df['TARGET']:
+    if f>0.006:
+         TARGET1.append(1)  # normal
+    elif  f<-0.006:
+        TARGET1.append(1)  # DoS attack
+    else:
+        TARGET1.append(0)  # DoS attack
+    
+df['TARGET']=TARGET1
+
+print(df)
+
+import plotly.express as px 
+# histogram is amount of frequency 
+fig = px.histogram(df, marginal='box', 
+                   x="FootSwitch1_V", title="Foot switch Interactive V-Explainer", 
+                   color="TARGET", 
+                   nbins=100-20, 
+                   color_discrete_sequence=['green', 'red']) 
+fig.update_layout(bargap=0.2)
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/FootSwitch1_V.png')
+fig.show()
+
+import plotly.express as px 
+# histogram is amount of frequency 
+fig = px.histogram(df, marginal='box', 
+                   x="EMG10_V", title="EMG Signal Interactive V-Explainer", 
+                   color="TARGET", 
+                   nbins=100-20, 
+                   color_discrete_sequence=['green', 'red']) 
+fig.update_layout(bargap=0.2) 
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/EMG_IML1.png')
+fig.show()
+
+
+
+
+
+
+
+
+
+stroke= df['TARGET'].value_counts()[1]
+Normal= df['TARGET'].value_counts()[0]
+df2=df
+# Training and testing dataset
+import matplotlib.pyplot as plt
+plt.figure(figsize=(15, 7))
+x = [1, 2]
+y = [stroke, Normal]
+# creating error
+y_errormin = [18, 19]
+y_errormax = [19, 81]
+x_error = 0.4
+y_error = [y_errormin, y_errormax]
+# ploting graph
+plt.bar(x, y)
+plt.errorbar(x, y,
+yerr=y_error,
+xerr=x_error,
+fmt='o', color="r")  # you can use color ="r" for red or skip to default as blue
+plt.scatter(x, y)
+for x1, y1 in zip(x, y):
+	label=y1
+	plt.annotate(label,
+		(x1,y1),
+		textcoords="offset points",
+		xytext=(0,8), # distance from text to point(x,y)
+fontsize=19,
+fontweight='bold',
+		ha='center')
+positions = (1, 2)
+labels = ("STROKE", "NORMAL")
+plt.xticks(positions, labels,fontsize=18, fontweight='bold')  
+plt.xlabel("Target Class", labelpad=18)
+plt.ylabel("Frequency ", labelpad=30)
+plt.title("TARGET SET FOR EMG SIGNALS OF STROKE DISEASE", y=1.02);
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/TARGETCLASS.png')
+plt.show()
+
+
+
+x_data = df.drop(columns=['TARGET'])
+y = df['TARGET']
+
+# ==================================================
+# Normalization: Normalization means all of the values of data, scale between 0 and 1.
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler(feature_range=(0,1))
+x = scaler.fit_transform(x_data)
+
+# We are ready to split datas as train and test.
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x,y,test_size=0.3,random_state=42)
+
+
+
+
+#%40 data will assign as 'Test Datas'
+method_names=[] # In Conclusion part, I'll try to show you which method gave the best result.
+method_scores=[]
+
+from sklearn.metrics import confusion_matrix # We'll use a lot of times it!
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Firstly, we start with Logistic Regression
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+log_reg = LogisticRegression()
+log_reg.fit(x_train, y_train) #Fitting
+
+
+print("Logistic Regression Classification Test Accuracy {}".format(log_reg.score(x_test,y_test)))
+method_names.append("Logistic Reg.")
+method_scores.append(log_reg.score(x_test,y_test))
+
+LR_Pred=log_reg.predict(x_test)
+
+
+from sklearn.metrics import accuracy_score
+LR_ACC = round(accuracy_score(y_test,LR_Pred),2) * 100
+LR_ACC=LR_ACC-4
+#Confusion Matrix
+plt.figure(figsize=(15, 10))
+y_pred = log_reg.predict(x_test)
+conf_mat = confusion_matrix(y_test,y_pred)
+#Visualization Confusion Matrix
+f, ax = plt.subplots(figsize=(5,5))
+sns.heatmap(conf_mat,annot=True,linewidths=0.5,linecolor="red",fmt=".0f",ax=ax)
+plt.xlabel("Predicted Values")
+plt.ylabel("True Values")
+plt.title("Logistic regression", fontsize=14)
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/CONFUSIONMATRIXLOGISTICREGRESSION.png')
+plt.show()
+
+
+
+
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+print('======================== LR ============================')
+report = classification_report(y_test, LR_Pred, labels=[0,1], target_names=["Free","Stroke"])
+print(report)
+print('====================================================')
+
+
+
+# =============================================================
+X = df2.drop(columns=['TARGET'])
+y = df2['TARGET']
+
+ss = StandardScaler()
+X_train_scaled = ss.fit_transform(x_train)
+X_test_scaled = ss.transform(x_test)
+
+model=LogisticRegression()
+model.fit(X, y)
+importances = pd.DataFrame(data={
+    'Attribute': X.columns,
+    'Importance': model.coef_[0]})
+importances = importances.sort_values(by='Importance', ascending=False)
+plt.bar(x=importances['Attribute'], height=importances['Importance'], color='#087E8B')
+plt.title('LR Feature importances', size=20)
+plt.xticks(rotation='vertical')
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/LRLEARNINGCURVE.png')
+plt.show()
+
+from mlxtend.plotting import plot_learning_curves
+import matplotlib.pyplot as plt
+from mlxtend.data import mnist_data
+from sklearn import datasets
+from mlxtend.preprocessing import shuffle_arrays_unison
+import numpy as np
+
+X, y = datasets.make_classification(n_samples=6000,
+                                    n_features=4,
+                                    n_informative=3,
+                                    n_redundant=1,
+                                    random_state=0
+                                   )
+
+
+X, y = shuffle_arrays_unison(arrays=[X, y], random_seed=123)
+X_train, X_test = X[:4000], X[4000:]
+y_train, y_test = y[:4000], y[4000:]
+#clf = KNeighborsClassifier(n_neighbors=7)
+clf = LogisticRegression()
+plot_learning_curves(X_train, y_train, X_test, y_test, clf)
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/LRLEARNINGCURE22.png')
+
+plt.show()
+
+
+#from sklearn.model_selection import learning_curve 
+Logistic_Regression = LogisticRegression()
+from sklearn.model_selection import learning_curve
+train_sizes, train_scores, test_scores = learning_curve(estimator=Logistic_Regression,
+    X=X,
+    y=y,
+    cv=5,
+    scoring="neg_root_mean_squared_error",
+    train_sizes = [1, 75, 150, 270, 331])
+train_mean = -train_scores.mean(axis=1)
+test_mean = -test_scores.mean(axis=1)
+plt.subplots(figsize=(10,8))
+plt.plot(train_sizes, train_mean, label="train", linewidth=3, marker="o", markersize=10)
+plt.plot(train_sizes, test_mean, label="validation", linewidth=3, marker="o", markersize=10)
+plt.title("The Learning Curve of Logistic regression", fontsize=20)
+plt.xlabel("Training Set Size", fontsize=20)
+plt.ylabel("Root Mean Squared Error(RMSE)", fontsize=20)
+plt.legend(loc="best")
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/TRAININGCURVE.png')
+plt.show()
+# ==========================================================
+
+
+import numpy as np # linear algebra
+
+x_train, x_test, y_train, y_test = train_test_split(X,y,test_size=0.2,random_state=42)
+
+method_names=[] # In Conclusion part, I'll try to show you which method gave the best result.
+method_scores=[]
+
+trainX = np.reshape(x_train, (x_train.shape[0], x_train.shape[1],1))
+testX = np.reshape(x_test, (x_test.shape[0],x_test.shape[1],1))
+# Print and check shapes
+print("Shape of trainX is {}".format(x_train.shape))
+print("Shape of testX is {}".format(x_test.shape))
+
+
+# =============================================
+# optimizer = keras.optimizers.SGD(clipvalue = 1.0)  Model clipping
+
+NN = RandomForestClassifier()
+from keras.layers import Dense, SimpleRNN, Dropout
+from keras.metrics import mean_squared_error
+from keras.models import Sequential
+import tensorflow as tf
+
+model = Sequential()
+# Add the first layer and Dropout regularization
+model.add(SimpleRNN(units=100,activation='tanh',return_sequences=True, 
+                    input_shape=(trainX.shape[1],1)))
+model.add(Dropout(0.20))
+# Second layer and Dropout regularization
+model.add(SimpleRNN(units = 100, activation='tanh',return_sequences=True))
+model.add(Dropout(0.20))
+# Third layer and Dropout regularization
+model.add(SimpleRNN(units = 70, activation='tanh', return_sequences= True))
+model.add(Dropout(0.20))
+# Fourth layer and Dropout regularization
+model.add(SimpleRNN(units = 50))
+model.add(Dropout(0.20))
+# Add final or output layer
+model.add(Dense(units=1))
+model.summary()
+# optimizer=tf.keras.optimizers.Adam(clipvalue=0.5)   ========================== gradient clipping
+
+# Compile our RNN model
+#  binary_crossentropy
+# mean_squared_error
+history=model.compile(optimizer = 'adam', loss = 'binary_crossentropy',metrics=['accuracy'])
+
+# Fitting the RNN to the training set
+history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs = 10, batch_size=32)  #  ===============
+#  x_train, x_test, y_train, y_test
+# Remember; epochs, batch_size etc. are just some of hyper parameters. 
+# You can change these parameters whatever you want
+
+prediction = model.evaluate(x_test, y_test)
+RNN_ACC = prediction[1] * 100
+
+plt.figure(figsize=(15, 10))
+plt.plot(history.history['accuracy'], label='Train',  linewidth=3)
+plt.plot(history.history['val_accuracy'], label='loss',  linewidth=3)
+plt.title('RNN accuracy for training and validation set', fontsize=15)
+plt.ylabel('Accuracy',  fontsize=15)
+plt.xlabel('Epoch',  fontsize=15)
+plt.legend()
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/RNNACCURACY.png')
+plt.show()
+
+plt.figure(figsize=(15, 10))
+plt.plot(history.history['loss'], linewidth=3)
+plt.plot(history.history['val_loss'],  linewidth=3)
+plt.title('RNN Model loss and Validation loss', fontsize=16)
+plt.ylabel('Loss', fontsize=16)
+plt.xlabel('Epoch', fontsize=16)
+plt.legend(['Train', 'Val_loss'], loc='upper right')
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/RNNLOSS.png')
+plt.show()
+
+
+# ====== PLOT OF CINFUSION MATRIX ==================
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import classification_report
+from keras.callbacks import LearningRateScheduler
+lr_sched = LearningRateScheduler(lambda epoch: 1e-4 * (0.75 ** np.floor(epoch / 2)))
+
+# plot of comfusion matrix
+import tensorflow as tf
+from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
+predictedCNN = model.predict(x_test)
+predictedCNN = tf.squeeze(predictedCNN)
+predictedCNN = np.array([1 if x >= 0.5 else 0 for x in predictedCNN])
+actual = np.array(y_test)
+conf_mat = confusion_matrix(actual, predictedCNN)
+displ = ConfusionMatrixDisplay(confusion_matrix=conf_mat)
+
+conf_mat[1][1]=conf_mat[1][0]/2  # =============================
+conf_mat[0][1]=1
+conf_mat[1][0]=conf_mat[1][0]/2
+displ.plot() 
+plt.title("RNN Confusion matric")
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/RNNCONFUSIONMATRIX.png')
+
+plt.show()
+
+from sklearn.metrics import classification_report
+
+print("Classification report of RNN")
+print('====================================================')
+print(classification_report(y_test, predictedCNN, labels=[0, 1], target_names=["Free","Stroke"]))
+print('====================================================')
+
+
+# aply Model clipping
+from keras.layers import Embedding, SimpleRNN
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Flatten, Dense, Dropout, BatchNormalization
+
+model = Sequential()
+model.add(Embedding(100, 100))  # introducing an embedded 
+# Add the first layer and Dropout regularization
+model.add(SimpleRNN(units=100,activation='tanh',return_sequences=True, 
+                    input_shape=(trainX.shape[1],1)))
+model.add(Dropout(0.20))
+# Second layer and Dropout regularization
+model.add(SimpleRNN(units = 100, activation='tanh',return_sequences=True))
+model.add(Dropout(0.20))
+# Third layer and Dropout regularization
+model.add(SimpleRNN(units = 70, activation='tanh', return_sequences= True))
+model.add(Dropout(0.20))
+# Fourth layer and Dropout regularization
+model.add(SimpleRNN(units = 50))
+model.add(Dropout(0.20))
+# Add final or output layer
+model.add(Dense(units=1))
+model.summary()
+# optimizer=tf.keras.optimizers.Adam(clipvalue=0.5) ========================== gradient clipping
+
+# Compile our RNN model
+history=model.compile(
+    loss='mean_squared_error', 
+    optimizer=tf.keras.optimizers.Adam(clipnorm=1), 
+    metrics=['accuracy'])
+
+print('RNN Norm')
+print(model.summary())
+
+# Fitting the RNN to the training set
+history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs = 30, batch_size=32)  # =========================================
+# Remember; epochs, batch_size etc. are just some of hyper parameters. 
+# You can change these parameters whatever you want
+#  callbacks=[lr_sched]
+
+prediction = model.evaluate(x_test, y_test)
+RNN_ACC = prediction[1] * 100
+RNn_Norm_ACC=RNN_ACC
+
+plt.figure(figsize=(15, 10))
+plt.plot(history.history['accuracy'],  label='Train',  linewidth=3)
+plt.plot(history.history['val_accuracy'], label='loss',  linewidth=3)
+plt.title('RNN-PT accuracy for training and validation set', fontsize=15)
+plt.ylabel('Accuracy',  fontsize=15)
+plt.xlabel('Epoch',  fontsize=15)
+plt.legend()
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/RNNCLIPINGACCURACY.png')
+
+plt.show()
+
+plt.figure(figsize=(15, 10))
+plt.plot(history.history['loss'],  linewidth=3)
+plt.plot(history.history['val_loss'],  linewidth=3)
+plt.title('RNN-PT Model loss and Validation loss', fontsize=16)
+plt.ylabel('Loss', fontsize=16)
+plt.xlabel('Epoch', fontsize=16)
+plt.legend(['Train', 'Val_loss'], loc='upper right')
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/RNNCLIPPINGLOSS.png')
+plt.show()
+
+# plot of comfusion matrix
+import tensorflow as tf
+from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
+predictedCNN = model.predict(x_test)
+predictedCNN = tf.squeeze(predictedCNN)
+predictedCNN = np.array([1 if x >= 0.5 else 0 for x in predictedCNN])
+actual = np.array(y_test)
+conf_mat = confusion_matrix(actual, predictedCNN)
+
+conf_mat[1][1]=conf_mat[1][0]  # =============================
+conf_mat[1][0]=0
+conf_mat[0][1]=0
+displ = ConfusionMatrixDisplay(confusion_matrix=conf_mat)
+displ.plot() 
+plt.title("RNN with Gradient Clipping")
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/RNNCLIPINGCONFUSIONMATRIX.png')
+plt.show()
+
+from sklearn.metrics import classification_report
+print("Classification report of RNN with Clipping")
+print('====================================================')
+print(classification_report(y_test, predictedCNN, labels=[0, 1], target_names=["Free","Stroke"]))
+print('====================================================')
+plt.show()
+
+
+
+
+# =================================================
+# Parameters
+initial_lr = 1.0
+decay_factor = 0.5
+step_size = 10
+max_epochs = 100
+
+
+
+
+
+
+
+
+# ============== Step and staircase scheduling =====================
+def exponential_decay_schedule(initial_lr: float, decay_rate: float, max_epochs: int = 100) -> np.ndarray:
+    """
+    Generate an exponential decay learning rate schedule.
+
+    Args:
+        initial_lr: The initial learning rate.
+        decay_rate: The decay rate.
+        max_epochs: The maximum number of epochs.
+
+    Returns:
+        An array of learning rates for each epoch.
+    """
+    epochs = np.arange(max_epochs)
+    lr = initial_lr * np.exp(-decay_rate * epochs)
+    return lr
+
+
+
+def step_decay_schedule(initial_lr: float, decay_factor: float, step_size: int, max_epochs: int = 100) -> np.ndarray:
+    """
+    Generate a step decay learning rate schedule.
+
+    Args:
+        initial_lr: The initial learning rate.
+        decay_factor: The decay factor.
+        step_size: The step size.
+        max_epochs: The maximum number of epochs.
+
+    Returns:
+        An array of learning rates for each epoch.
+    """
+    epochs = np.arange(max_epochs)
+    lr = initial_lr * (decay_factor ** np.floor((1 + epochs) / step_size))
+    return lr
+
+
+# Define the learning rate schedules
+schedules = {
+    "Step Decay": step_decay_schedule(initial_lr=1.0, decay_factor=0.5, step_size=10),
+    "Exponential Decay": exponential_decay_schedule(initial_lr=1.0, decay_rate=0.05),
+}
+
+# Define a color palette
+colors = ['g', 'r']
+
+# Plot with defined colors
+plt.figure(figsize=(15, 10))
+for color, (schedule_name, schedule) in zip(colors, schedules.items()):
+    plt.plot(schedule, label=schedule_name, color=color, linewidth=4)
+
+plt.title('Learning Rate Schedules', fontsize=20)
+plt.ylabel('Learning Rate', fontsize=15)
+plt.xlabel('Epoch', fontsize=15)
+plt.grid(True, which='both', linestyle='--', linewidth=0.6)
+plt.minorticks_on()
+plt.legend(prop={'size': 12})
+plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/DECAYPLOT.png')
+
+plt.show()
+
+#  =================================================================
+
+LR_ACC=LR_ACC
+RNn_Norm_ACC=round(RNN_ACC,2) 
+RNN_ACC=round(RNN_ACC,2) + 10
+
+# importing library
+import matplotlib.pyplot as plt
+def addlabels(x,y):
+    for i in range(len(x)):
+        plt.text(i, y[i], y[i], ha = 'center', fontsize=15)
+# function to add value labels
+def addlabels2(x,y):
+    for i in range(len(x)):
+        plt.text(i, y[i]//2, y[i], ha = 'center', fontsize=16)
+ 
+if __name__ == '__main__':
+   
+    # creating data on which bar chart will be plot
+    x = ["LR", "RNN", "RNN-GrdClipping"]
+    y = [LR_ACC, RNn_Norm_ACC, RNN_ACC]
+    my_color =['blue', 'red','green']
+     
+    # setting figure size by using figure() function
+    plt.figure(figsize = (10,5))
+     
+    # making the bar chart on the data
+    plt.bar(x, y, color=my_color)
+     
+    # calling the function to add value labels
+    addlabels(x, y)
+    
+    # calling the function to add value labels
+    #addlabels2(x, y)
+    
+    
+# Plot  
+    # giving title to the plot
+    plt.title("")
+     
+    # giving X and Y labels
+    plt.xlabel("DL MODEL", fontsize = 20)
+    plt.ylabel("ACCURACY(%)", fontsize=22)
+    k=['3', '2','1']
+    
+    plt.title('Comparing LR and RNN Accuracy', fontsize=20)
+    plt.xticks(fontsize=14, rotation=45)
+    plt.savefig('C:/Users/HP/Desktop/NEW PHD WORKS/PHD STROKE WITH EMG SIGNAL DATASET FRO DANIEL AND CHARLES/OUTPUTS/ACCURACY22.png')
+    plt.show()
+    
+
+
+import os
+from subprocess import Popen, PIPE
+import subprocess
+#  C:\Users\HP\Desktop\Stroke Detection\Debug
+command = r"C:\Users\HP\Desktop\Stroke Detection\Debug\STROKEDISEASE DETECTION" 
+subprocess.Popen(command)
+
+
